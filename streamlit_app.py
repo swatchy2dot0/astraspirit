@@ -1,56 +1,48 @@
 import streamlit as st
-from openai import OpenAI
+from decouple import config
+from PIL import Image
 
-# Show title and description.
-st.title("💬 Chatbot")
-st.write(
-    "This is a simple chatbot that uses OpenAI's GPT-3.5 model to generate responses. "
-    "To use this app, you need to provide an OpenAI API key, which you can get [here](https://platform.openai.com/account/api-keys). "
-    "You can also learn how to build this app step by step by [following our tutorial](https://docs.streamlit.io/develop/tutorials/llms/build-conversational-apps)."
-)
+st.set_page_config(page_icon='🗡', page_title='Streamlit Paywall Example')
 
-# Ask user for their OpenAI API key via `st.text_input`.
-# Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
-# via `st.secrets`, see https://docs.streamlit.io/develop/concepts/connections/secrets-management
-openai_api_key = st.text_input("OpenAI API Key", type="password")
-if not openai_api_key:
-    st.info("Please add your OpenAI API key to continue.", icon="🗝️")
-else:
+st.markdown('## Chat with Tyrion Lannister ⚔️')
+col1, col2 = st.columns((2,1))
+with col1:
+    st.markdown(
+        f"""
+        Chat with Tyrion Lannister to advise you on:
+        - Office Politics
+        - War Strategy
+        - The Targaryens
 
-    # Create an OpenAI client.
-    client = OpenAI(api_key=openai_api_key)
 
-    # Create a session state variable to store the chat messages. This ensures that the
-    # messages persist across reruns.
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+        #### [Sign Up Now 🤘🏻]({config('STRIPE_CHECKOUT_LINK')})
+        """
+    )
+with col2:
+    image = Image.open('./assets/DALL·E 2023-01-08 17.53.04 - futuristic knight robot on a horse in cyberpunk theme.png')
+    st.image(image)
 
-    # Display the existing chat messages via `st.chat_message`.
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
 
-    # Create a chat input field to allow the user to enter a message. This will display
-    # automatically at the bottom of the page.
-    if prompt := st.chat_input("What is up?"):
+st.markdown('### Already have an Account? Login Below👇🏻')
+with st.form("login_form"):
+    st.write("Login")
+    email = st.text_input('Enter Your Email')
+    password = st.text_input('Enter Your Password')
+    submitted = st.form_submit_button("Login")
 
-        # Store and display the current prompt.
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
 
-        # Generate a response using the OpenAI API.
-        stream = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": m["role"], "content": m["content"]}
-                for m in st.session_state.messages
-            ],
-            stream=True,
-        )
+if submitted:
+    if password == config('SECRET_PASSWORD'):
+        st.session_state['logged_in'] = True
+        st.text('Succesfully Logged In!')
+    else:
+        st.text('Incorrect, login credentials.')
+        st.session_state['logged_in'] = False
 
-        # Stream the response to the chat using `st.write_stream`, then store it in 
-        # session state.
-        with st.chat_message("assistant"):
-            response = st.write_stream(stream)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+
+if 'logged_in' in st.session_state.keys():
+    if st.session_state['logged_in']:
+        st.markdown('## Ask Me Anything')
+        question = st.text_input('Ask your question')
+        if question != '':
+            st.write('I drink and I know things.')
